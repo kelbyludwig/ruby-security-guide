@@ -278,9 +278,9 @@ for more info.
 
 ### Classes, Modules & Mixins
 
-Classes
 Class definition is very straightforward with the initialize method being the constructor:
 
+```
 class Kumys
   # our constructor
   def initialize(is_the_best)
@@ -297,11 +297,16 @@ end
 
 
 Kumys.new(true) # creates new instance of our Kumys class
-It's very common to use the following helper methods to automatically generate instance variable getters/setters:
+```
 
-attr_reader - generates getter
-attr_writer - generate setter
-attr_accessor - generates setter and getter
+It's very common to use the following helper methods to automatically generate
+instance variable getters/setters:
+
+* `attr_reader` - generates getter
+* `attr_writer` - generate setter
+* `attr_accessor` - generates setter and getter
+
+```
 class Kumys
   attr_accessor :is_the_best
 end
@@ -309,27 +314,46 @@ end
 k = Kumys.new(true)
 k.is_the_best = true
 k.is_the_best # returns true
-Methods
+```
+
+### Methods
 Ruby supports both default argument values and variable-length arguments.
 
+```
 def my_method(arg1, arg2 = "Default value")
    ...
 end
-The above code defines 2 arguments and assigns the specified default value to the 2nd argument if it's not supplied during invocation:
+```
 
-my_method(1)                   # arg2 is assigned default value
+The above code defines 2 arguments and assigns the specified default value to
+the 2nd argument if it's not supplied during invocation:
+
+```
+my_method(1) # arg2 is assigned default value
 my_method(1, "Another Value")
-Keep in mind that parentheses are optional during invocation, so the above could be also written as:
+```
 
+Keep in mind that parentheses are optional during invocation, so the above
+could be also written as:
+
+```
 my_method 1
 my_method 1, "Another Value"
+```
+
 unfortunately what that means is that if a method doesn't accept any arguments it can be written as:
 
+```
 method_with_no_args
-which makes it hard to tell if it's a local variable reference or a method invocation without looking at the definition.
+```
 
-Variable-length arguments are indicated using a * in front of the parameter declaration and results in variable-length arguments bundled into anArray:
+which makes it hard to tell if it's a local variable reference or a method
+invocation without looking at the definition.
 
+Variable-length arguments are indicated using a `*` in front of the parameter
+declaration and results in variable-length arguments bundled into an Array:
+
+```
 def cook(dish_name, *ingredients) 
   ingredients.each do |ingredient|
     prepare(ingredient)
@@ -338,19 +362,27 @@ def cook(dish_name, *ingredients)
 end
 
 cook('plov', 'rice', 'carrots', 'onions', 'lamb')
+```
+
 all arguments after the 1st argument are passed in the ingredients array.
 
-Sometimes it's necessary to expand an Array to pass each element as a separate parameter, which is achieved by prefixing the array with *:
+Sometimes it's necessary to expand an Array to pass each element as a separate
+parameter, which is achieved by prefixing the array with `*`:
 
+```
 def cook(dish_name, *ingredients) 
   ...
   cut(*ingredients)
   ...
 end
-The cut method above receives each element as a separate argument instead of getting an array as an argument.
+```
+
+The cut method above receives each element as a separate argument instead of
+getting an array as an argument.
 
 Another common Ruby pattern is to pass in a Hash containing options, e.g.:
 
+```
 def cook(dish_name, options = {}) 
   if options[:fry]
     fry options[:ingredients]
@@ -363,11 +395,16 @@ cook('fried rice',
           :fry => true,
           :ingredients => ['rice', 'egg', 'prawns',
                            'peas' 'spring onions])
-In the above code we've defined options argument into which all of the arguments following the dish_name argument will be collected. SeeRuby's More About Methods for more info.
+```
 
-Inheritance
+In the above code we've defined options argument into which all of the
+arguments following the dish_name argument will be collected. See Ruby's [More
+About Methods](http://phrogz.net/ProgrammingRuby/tut_methods.html) for more info.
+
+### Inheritance
 Inheritance is expressed in a very straightforward way:
 
+```
 class SubClass < SuperClass
   def overriden_method(one, two)
     # 'super' without argument will pass all the arguments
@@ -377,13 +414,21 @@ class SubClass < SuperClass
     result
   end
 end
-SubClass inherits from SuperClass in the above example and overrides the override_method method. Class methods covered below are also inherited.
+```
 
-Class methods
-Class methods are pretty much what other languages (e.g. Java) call static methods, or at least they are the closest thing to static methods that Ruby has (they are actually instance methods of a class object on which they are defined.). There are several ways of defining them:
+`SubClass` inherits from `SuperClass` in the above example and overrides the
+override_method method. Class methods covered below are also inherited.
+
+### Class methods
+
+Class methods are pretty much what other languages (e.g. Java) call static
+methods, or at least they are the closest thing to static methods that Ruby has
+(they are actually instance methods of a class object on which they are
+defined.). There are several ways of defining them:
 
 1st variant:
 
+```
 class Kumys
   @@total_litres_produced = 0
 
@@ -392,8 +437,11 @@ class Kumys
     ...
   end
 end
+```
+
 2nd variant:
 
+```
 class Kumys
   @@total_litres_produced = 0
 
@@ -402,8 +450,11 @@ class Kumys
     ...
   end
 end
+```
+
 3rd variant:
 
+```
 class Kumys
   @@total_litres_produced = 0
 
@@ -414,16 +465,29 @@ class Kumys
     end
   end
 end
-All of the above do the same thing and define a class variable @@total_litres_produced and a class method called make_more, which can be invoked as follows:
+```
 
+All of the above do the same thing and define a class variable
+`@@total_litres_produced` and a class method called `make_more`, which can be
+invoked as follows:
+
+```
 Kumys.make_more(100)
-If you are interested in all the gory details about self read Metaprogramming in Ruby: It's All About the Self.
+```
 
-Modules
-Modules group methods, constants and class variables. Their definition looks very similar to class definitions except the class keyword is replaced with module. Unlike classes, modules can't be instantiated or subclassed. There are 2 main use cases for modules: namespaces and mixins.
+If you are interested in all the gory details about self read [Metaprogramming
+in Ruby: It's All About the Self](http://yehudakatz.com/2009/11/15/metaprogramming-in-ruby-its-all-about-the-self/).
+
+### Modules
+
+Modules group methods, constants and class variables. Their definition looks
+very similar to class definitions except the class keyword is replaced with
+module. Unlike classes, modules can't be instantiated or subclassed. There are
+2 main use cases for modules: namespaces and mixins.
 
 Using modules as namespaces to avoid name collisions:
 
+```
 module MyProduct
   module MySubSystem
     def self.do_something
@@ -431,15 +495,22 @@ module MyProduct
     end
   end
 end
+```
+
 which can be invoked:
 
+```
 MyProduct::MySubSystem.do_something
+```
+
 There are a couple of things to know about the above code:
 
-we've defined a class method in the module (notice the self keyword?)
-you can nest modules and define classes within modules
-Ruby doesn't support multiple inheritance, but mixins allow you to mix a module into a class, which essentially achieves the same effect.
+we've defined a class method in the module (notice the `self` keyword?) you can
+nest modules and define classes within modules Ruby doesn't support multiple
+inheritance, but mixins allow you to mix a module into a class, which
+essentially achieves the same effect.
 
+```
 module UsefulStuff
   def useful
     @useful ||= Useful.new
@@ -455,33 +526,55 @@ class SomeClass
     ...
   end
 end
-In the above code all of the instance methods of UsefulStuff are now part of the SomeClass class. Whenever SomeClass calls useful for the first time, a new instance variable @useful is created and assigned the value of new Useful instance. Note that ||= is a Ruby idiom, which can be read as "assign if nil".
+```
 
-There 2 ways to mixin a module: using include or extend. And this is where it may get confusing(based on this):
+In the above code all of the instance methods of `UsefulStuff` are now part of
+the `SomeClass` class. Whenever SomeClass calls useful for the first time, a new
+instance variable `@useful` is created and assigned the value of new `Useful`
+instance. Note that `||=` is a Ruby idiom, which can be read as "assign if nil".
 
-include - mixes in module's methods as instance methods in the containing class, so if class Klazz includes module Mod, then all instances of Klazz have access to Mod's methods as instance methods
-extend - adds the specified module's methods and constants to the target's metaclass, so Klazz.extend(Mod) adds Mod's methods toKlazz as class methods and obj.extend(Mod) adds Mod's methods as instance methods to obj's metaclass (i.e. other instances ofobj.class do not have those methods).
+There 2 ways to mixin a module: using include or extend. And this is where it
+may get confusing(based on this):
+
+* include - mixes in module's methods as instance methods in the containing
+  class, so if class Klazz includes module Mod, then all instances of Klazz
+  have access to Mod's methods as instance methods
+
+* extend - adds the specified module's methods and constants to the target's
+  metaclass, so Klazz.extend(Mod) adds Mod's methods toKlazz as class methods
+  and obj.extend(Mod) adds Mod's methods as instance methods to obj's metaclass
+  (i.e. other instances ofobj.class do not have those methods).
+
 Confused yet? Welcome to the world of metaprogramming!
 
-Method Lookup Algorithm
-If you are wondering how conflicting methods are handled, here's the algorithm for how Ruby looks up methods (taken from here):
+### Method Lookup Algorithm
 
-Methods defined in the singleton/metaclass
-Modules mixed into singleton/metaclass in reverse order of inclusion
-Methods defined by the object's class
-Modules included by the object's class in reverse order of inclusion
-Methods defined by the object's superclass
-The process goes on until BasicObject is reached. See Singleton/Eigenclass/Metaclass section for more information on singleton/metaclass.
+If you are wondering how conflicting methods are handled, here's the algorithm
+for how Ruby looks up methods:
 
-See Lookup Algorithm, Ruby's method lookup path and the Ruby Method Lookup Flow diagram for more info on method lookup.
+1. Methods defined in the singleton/metaclass
+2. Modules mixed into singleton/metaclass in reverse order of inclusion
+3. Methods defined by the object's class
+4. Modules included by the object's class in reverse order of inclusion
+5. Methods defined by the object's superclass
 
-Tools
+The process goes on until BasicObject is reached. See
+Singleton/Eigenclass/Metaclass section for more information on
+singleton/metaclass.
+
+See Lookup Algorithm, Ruby's method lookup path and the [Ruby Method Lookup
+Flow diagram](http://phrogz.net/RubyLibs/RubyMethodLookupFlow.pdf) for more
+info on method lookup.
+
+### Tools
 
 This section needs to be expanded
 
-IRB
+### IRB
+
 Interactive RuBy gives you an interactive Ruby shell where you can evaluate arbitrary Ruby. It's very useful for quick behaviour verification:
 
+```
 $ irb
 >> "foo".public_methods
 => [:upcase!, :rpartition, :old_format, :to_str, :ascii_only?, :lstrip, :upto, :getbyte, :lines, :encoding, :sum,
@@ -500,16 +593,29 @@ $ irb
 :taint, :class, :instance_variables, :!~, :public_methods, :instance_exec, :__send__, :instance_eval, :equal?, :!, :!=]
 >> "foo".length
 => 3
-The Dangerous Ruby Stuff
+```
 
-This section describes potential Ruby-specific, security-related issues, features and constructs. Keep in mind that while generic security bugs, such as lack of access control, are not be covered in this document, they can still be present in Ruby applications and need to be checked for.
+### The Dangerous Ruby Stuff
 
-Developers can override any method!
+This section describes potential Ruby-specific, security-related issues,
+features and constructs. Keep in mind that while generic security bugs, such as
+lack of access control, are not be covered in this document, they can still be
+present in Ruby applications and need to be checked for.
 
-Any method in any class can be overridden in Ruby, e.g. you can easily change the logic behind the + method of an Integer or override anyString method. It's also possible to add new methods to core classes, e.g. String. Both of the above are usually referred to as "monkey patching" and are heavily used by the Ruby community. That means that even if you are looking at a method that you think will be run, in reality it may not be the case. The fact that, unlike Java, Ruby doesn't enforce any file/directory structure makes it difficult to spot this kind of issues (e.g. grepping will be ineffective in some cases).
+#### Developers can override any method!
+
+Any method in any class can be overridden in Ruby, e.g. you can easily change
+the logic behind the + method of an Integer or override anyString method. It's
+also possible to add new methods to core classes, e.g. String. Both of the
+above are usually referred to as "monkey patching" and are heavily used by the
+Ruby community. That means that even if you are looking at a method that you
+think will be run, in reality it may not be the case. The fact that, unlike
+Java, Ruby doesn't enforce any file/directory structure makes it difficult to
+spot this kind of issues (e.g. grepping will be ineffective in some cases).
 
 Let's look at the following imaginary example, assume the following is in the money_transfer.rb file:
 
+```
 module MyApp
     class MoneyTransfer
       def transfer(from, to, amount)
@@ -519,8 +625,16 @@ module MyApp
       end
     end
 end
-after you've verified the above code for correctness, someone else finds a bug in the audited application that allows an attacker to transfer money from arbitrary accounts. You are confident that you saw the authorization check in the code, but after an investigation you realize that there was another file called new_money_transfer.rb in a different directory, which had authorization check refactored out:
+```
 
+after you've verified the above code for correctness, someone else finds a bug
+in the audited application that allows an attacker to transfer money from
+arbitrary accounts. You are confident that you saw the authorization check in
+the code, but after an investigation you realize that there was another file
+called new_money_transfer.rb in a different directory, which had authorization
+check refactored out:
+
+```
 module MyApp
     class MoneyTransfer
       def transfer(from, to, amount)
@@ -528,42 +642,71 @@ module MyApp
       end
     end
 end
-the above code effectively overrides the original method and you need to look out for that when performing security audits.
+```
+
+the above code effectively overrides the original method and you need to look
+out for that when performing security audits.
 
 Sometimes you may also see code like:
 
+```
 input = "this is just a string"
 ...
 input.encrypt(@key)
-which calls encrypt() method on a String. However, since String documentation doesn't have any references to encrypt(), then what you are looking at is a library or application code monkey patching encrypt method, either into the String class or into object's metaclass (see Metaprogramming section for more info). You are most likely to find a reference to String class somewhere e.g.:
+```
 
+which calls encrypt() method on a String. However, since String documentation
+doesn't have any references to encrypt(), then what you are looking at is a
+library or application code monkey patching encrypt method, either into the
+String class or into object's metaclass (see Metaprogramming section for more
+info). You are most likely to find a reference to String class somewhere e.g.:
+
+```
 class String
   def encrypt(key)
     …
   end
 end
-!Ruby Hacker Tip! During security review you could potentially override Ruby-provided hooks (e.g. inherited or extended) to get more insights into the events taking place at runtime.
+```
 
-send() - invoking methods dynamically
+*Ruby Hacker Tip:* During security review you could potentially override
+Ruby-provided hooks (e.g. inherited or extended) to get more insights into the
+events taking place at runtime.
 
-One of the widely used features in Ruby is dynamic method invocation using send(). The following examples illustrate how send() works. The first argument to send() is the name of the method to invoke and the rest of the argument is passed to that method as arguments:
+#### send() - invoking methods dynamically
 
+One of the widely used features in Ruby is dynamic method invocation using
+send(). The following examples illustrate how send() works. The first argument
+to send() is the name of the method to invoke and the rest of the argument is
+passed to that method as arguments:
+
+```
 >> "kumys".send(:length)
 => 5
 >> "kumys".send("length")
 => 5
-the above code dynamically invokes the length method on the string "kumys". As you can see above, send() accepts both strings("length") and symbols(:length).
+```
 
+the above code dynamically invokes the length method on the string "kumys". As
+you can see above, send() accepts both strings("length") and symbols(:length).
+
+```
 >> "kumys".send("concat", " rules!")
 => "kumys rules!"
+```
+
 the code above invokes the concat method and supplies it with an argument (" rules!").
 
+```
 >> "kumys".send("send", "send", :send, "length")
 => 5
+```
+
 the above code invokes send 4 times with the last send invoking the length method.
 
 It is also possible to test whether an object has a method defined by invoking the respond_to? method:
 
+```
 >> "foo".respond_to?("got_kumys?")
 => false
 >> "foo".respond_to?("length")
@@ -572,35 +715,58 @@ It is also possible to test whether an object has a method defined by invoking t
 => false
 >> "foo".respond_to?("eval", true) # true forces private methods lookup
 => true
+```
+
 As you can see, send can be used to implement dynamic method dispatching.
 
 Another frequent use case is to dynamically assign attributes:
 
+```
 class Person
   attr_accessor :name, :age, :address
 end
+```
+
 in the above case the following code can be used to assign attributes:
 
+```
 p = Person.new
 p.send("name=", "Foo Baroff")
 p.send("address=", "Bazistan")
+```
+
 as you've already realized it can also be done dynamically based on user input(e.g. HTTP parameters):
 
+
+```
 p = Person.new()
 params.each do |key, value|
   p.send("#{key}=", value)
 end
-the above code appends = to the user-supplied value, thus guaranteeing that only methods whose names end with = can be invoked. For example, supplying foo=bar in HTTP parameters results in the following code executed:
+```
 
+the above code appends `=` to the user-supplied value, thus guaranteeing that
+only methods whose names end with = can be invoked. For example, supplying
+foo=bar in HTTP parameters results in the following code executed:
+
+```
 p.send("foo=", "bar")
+```
+
 and that's, for example, exactly how Rails assigns values to model attributes.
 
 send() can invoke both public and private methods.
 
-At this point you are probably realizing that invoking arbitrary methods on an object based on user input is probably a bad idea, though in the example above it is only possible to invoke methods that end with =. You may wonder if there are any sensitive methods that end with = and the answer would depend on the object send is being invoked on.
+At this point you are probably realizing that invoking arbitrary methods on an
+object based on user input is probably a bad idea, though in the example above
+it is only possible to invoke methods that end with =. You may wonder if there
+are any sensitive methods that end with = and the answer would depend on the
+object send is being invoked on.
 
-!Ruby Hacker Tip! To list all public and private methods, use public_methods and private_methods methods respectively:
+*Ruby Hacker Tip:* To list all public and private methods, use public_methods and private_methods methods respectively:
 
+
+```
 >> "foo".private_methods.sort
 => [:Array, :Complex, :Float, :Integer, :Rational, :String, :__callee__, :__method__, :_exec_internal, :`, :abort,
 :at_exit, :autoload, :autoload?, :binding, :block_given?, :callcc, :caller, :catch, :default_src_encoding, :eval, :exec,
@@ -627,18 +793,29 @@ At this point you are probably realizing that invoking arbitrary methods on an o
 :tr!, :tr_s, :tr_s!, :trust, :type, :unpack, :untaint, :untrust, :untrusted?, :upcase, :upcase!, :upto,
 :valid_encoding?]
 >>
-So if the above send code was invoked on an instance of a String, we would be able to execute the following methods:
+```
 
+So if the above send code was invoked on an instance of a String, we would be
+able to execute the following methods:
+
+```
 ==
 []=
 <=
 >=
 ===
 !=
-!Ruby Hacker Tip! You may wonder if it's possible to neutralize the = in the above send code by injecting special characters (e.g. NUL) in front of it. Unfortunately it appears to not be possible, but you are more than welcome to try it out on various Ruby implementations.
+```
 
-Attentive readers may have noticed that the array of private methods above contains some interesting entries:
+*Ruby Hacker Tip:* You may wonder if it's possible to neutralize the `=` in the
+above send code by injecting special characters (e.g. NUL) in front of it.
+Unfortunately it appears to not be possible, but you are more than welcome to
+try it out on various Ruby implementations.
 
+Attentive readers may have noticed that the array of private methods above
+contains some interesting entries:
+
+```
 exec
 system
 eval
@@ -647,35 +824,74 @@ puts
 exit
 fork
 syscall
-and may wonder why are these methods part of the String class? Remember that everything in Ruby is an object? That means that it's impossible to have a standalone function because it must belong to a class or a module. At the same time developers want to be able to invoke certain methods without qualifying them with a module name thus simulating standalone functions, e.g.:
+```
 
+and may wonder why are these methods part of the String class? Remember that
+everything in Ruby is an object? That means that it's impossible to have a
+standalone function because it must belong to a class or a module. At the same
+time developers want to be able to invoke certain methods without qualifying
+them with a module name thus simulating standalone functions, e.g.:
+
+```
 ...
 def my_method
   puts "Hello World!"
 end
-puts isn't defined in our class, but it's part of every object and the way it is accomplished in Ruby is by mixing in Kernel module into Objectclass, which means that all Kernel methods (e.g. exec, eval, syscall) become private methods of every single object in Ruby. Thus the following is possible:
+```
 
+puts isn't defined in our class, but it's part of every object and the way it
+is accomplished in Ruby is by mixing in Kernel module into Objectclass, which
+means that all Kernel methods (e.g. exec, eval, syscall) become private methods
+of every single object in Ruby. Thus the following is possible:
+
+```
 >> 1.send(:exit)
+```
+
 which will terminate Ruby runtime, or
 
+```
 >> "Hello pwnage!".send("exec", "mkdir /tmp/PWNED")
-which will execute the mkdir /tmp/PWNED command, or the following, which achieves the same effect, without replacing the current process:
+```
 
+which will execute the mkdir /tmp/PWNED command, or the following, which
+achieves the same effect, without replacing the current process:
+
+```
 >> "hello".send("eval", "`mkdir /tmp/PWNED`")
-As you can see, send can be extremely dangerous if its first argument is attacker controlled and can result in remote code execution if the user controls the first two arguments (method name and argument).
+```
 
-There's a public variant of send called public_send, which will only invoke public methods (remember that eval, exec, syscall, etc are all private), but does that mean it's safe to use it? Unfortunately, the answer is NO, because send itself is a public method and hence it's possible to do the following:
+As you can see, send can be extremely dangerous if its first argument is
+attacker controlled and can result in remote code execution if the user
+controls the first two arguments (method name and argument).
 
+There's a public variant of send called public_send, which will only invoke
+public methods (remember that eval, exec, syscall, etc are all private), but
+does that mean it's safe to use it? Unfortunately, the answer is NO, because
+send itself is a public method and hence it's possible to do the following:
+
+```
 >> "hello".public_send("send", "eval", "`mkdir /tmp/PWNED`")
-public_send invokes send, which in turn invokes eval.
+```
 
-Security reviewers should pay extra attention to all __send__(), send() and public_send() method calls and make sure that an attacker does not control the first argument:
+`public_send` invokes send, which in turn invokes eval.
 
-if attacker controls ONLY the first argument then it's possible to at least invoke exit method thus shutting down the application
-if attacker controls first and second arguments then the application is vulnerable to remote code execution since the attacker can invoke a number of methods to evaluate her code (e.g. eval)
-Additionally, if the first argument is partially controlled (e.g. user input is prefixed or suffixed with a constant) then the reviewer should ensure that no unintended method can be invoked.
+Security reviewers should pay extra attention to all __send__(), send() and
+public_send() method calls and make sure that an attacker does not control the
+first argument:
 
-method_missing() - implementing functionality on the fly
+* if attacker controls ONLY the first argument then it's possible to at least
+  invoke exit method thus shutting down the application
+
+* if attacker controls first and second arguments then the application is
+  vulnerable to remote code execution since the attacker can invoke a number of
+  methods to evaluate her code (e.g. eval)
+
+* Additionally, if the first argument is partially controlled (e.g. user input is
+  prefixed or suffixed with a constant) then the reviewer should ensure that no
+  unintended method can be invoked.
+
+### method_missing() - implementing functionality on the fly
 
 Ruby provides a hook to be invoked whenever a nonexistent method is invoked on an object. Consider the following code:
 
