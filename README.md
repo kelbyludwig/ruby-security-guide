@@ -891,23 +891,35 @@ first argument:
   prefixed or suffixed with a constant) then the reviewer should ensure that no
   unintended method can be invoked.
 
-### method_missing() - implementing functionality on the fly
+#### method_missing() - implementing functionality on the fly
 
-Ruby provides a hook to be invoked whenever a nonexistent method is invoked on an object. Consider the following code:
+Ruby provides a hook to be invoked whenever a nonexistent method is invoked on
+an object. Consider the following code:
 
+```
 class ClassWithNoMethods
   def method_missing(sym, *args, &block)
     puts "#{sym} method was called"
   end
 end
+```
+
 let's examine its behaviour:
 
+```
 >> c = ClassWithNoMethods.new
  => #<ClassWithNoMethods:0x1b6956f> 
 >> c.got_kumys?
 got_kumys? method was called
-as you can see, since the method didn't exist, method_missing hook was executed. So what can this functionality be used for? The most popular use case is to dynamically simulate methods based on method names being invoked. A great example of that is the way ActiveRecord implements its finder methods (simplified code):
+```
 
+as you can see, since the method didn't exist, method_missing hook was
+executed. So what can this functionality be used for? The most popular use case
+is to dynamically simulate methods based on method names being invoked. A great
+example of that is the way ActiveRecord implements its finder methods
+(simplified code):
+
+```
 module ActiveRecord
   class Base
 
@@ -934,17 +946,31 @@ module ActiveRecord
     end
   end
 end
+```
+
 the above code enables users to query their models based on any attribute by executing methods with the right prefix, e.g.:
 
+```
 User.find_by_email("user@domain.com")
 User.find_all_by_first_name("Vasya")
 User.find_or_create_by_email("user@domain.com")
-all of which will be dispatched to the method_missing hook since methods don't exist, which in turn parses the name of the method being invoked and carries out appropriate action.
+```
 
-Another use case for method_missing hook is delegation, when only some methods are defined and the rest are delegated to another object. See this example on GitHub for an example.
+all of which will be dispatched to the method_missing hook since methods don't
+exist, which in turn parses the name of the method being invoked and carries
+out appropriate action.
 
-method_missing should be considered together with send() especially in cases where the first argument is partially controlled since it is possible to trigger the method_missing hook and get it to carry out an interesting action. Let's consider the following contrived example as an illustration of a potential issue:
+Another use case for method_missing hook is delegation, when only some methods
+are defined and the rest are delegated to another object. See this example on
+GitHub for an example.
 
+method_missing should be considered together with send() especially in cases
+where the first argument is partially controlled since it is possible to
+trigger the method_missing hook and get it to carry out an interesting action.
+Let's consider the following contrived example as an illustration of a
+potential issue:
+
+```
 def set_fill(fill_type, argument) 
   send("fill_#{fill_type}", argument)
 end
@@ -965,33 +991,66 @@ def method_missing(id, *args, &block)
    super
  end
 end
-In the above method_missing code the method name(id) is matched against regular expressions with groups, and matching group($1) is then used as a method name to invoke via send(). Let's assume that arguments come from HTTP parameters (they could also come from a user supplied document) and requesting /fill?color=red would result in the following code being run:
+```
 
+In the above method_missing code the method name(id) is matched against regular
+expressions with groups, and matching group($1) is then used as a method name
+to invoke via send(). Let's assume that arguments come from HTTP parameters
+(they could also come from a user supplied document) and requesting
+/fill?color=red would result in the following code being run:
+
+```
 http_params.each do |name, value|
   set_fill(name, value)
 end
-It's hopefully clear at this point that HTTP parameter name effectively controls which method is invoked and the HTTP parameter value is its argument. To gain full remote code execution the attacker would have to submit:
+```
 
+It's hopefully clear at this point that HTTP parameter name effectively
+controls which method is invoked and the HTTP parameter value is its argument.
+To gain full remote code execution the attacker would have to submit:
+
+```
 /fill?eval=`mkdir /tmp/PWND`
+```
+
 which would result in the following methods execution sequence:
 
+```
 set_fill("eval", "`mkdir /tmp/PWND`")
 send("fill_eval", "`mkdir /tmp/PWND`")
 method_missing("fill_eval", "`mkdir /tmp/PWND`", nil)
 send("eval", "`mkdir /tmp/PWND`")
-While the example above is a bit contrived, it is intended to demonstrate the kind of issues that can arise from the combination of send() andmethod_missing(). During security reviews all method_missing() implementations should be audited for insecure patterns.
+```
 
-Metaprogramming
+While the example above is a bit contrived, it is intended to demonstrate the
+kind of issues that can arise from the combination of send()
+andmethod_missing(). During security reviews all method_missing()
+implementations should be audited for insecure patterns.
 
-One of the reasons why a lot of people love but also hate Ruby is metaprogramming. The subject of metaprogramming is a vast one and covering it in a small section is tricky, but it doesn't hurt to try.
+#### Metaprogramming
 
-First of all you may wonder why would anyone want to dynamically create classes or define methods? Laziness! Metaprogramming allows users of the dynamic code to avoid writing a lot of boilerplate or complex code and instead have that code automagically generated. Earlier you've seen the attr_accessor method, which will generate setters and getters for supplied attributes. That's a very good example of metaprogramming, which makes code more readable, as long as you aren't concerned with implementation details and (un)fortunately, being a security reviewer, you are!
+One of the reasons why a lot of people love but also hate Ruby is
+metaprogramming. The subject of metaprogramming is a vast one and covering it
+in a small section is tricky, but it doesn't hurt to try.
 
-Auditing source code that heavily uses metaprogramming (e.g. Rails) can be a tricky exercise and this section aims to equip you with the necessary knowledge to do so effectively.
+First of all you may wonder why would anyone want to dynamically create classes
+or define methods? Laziness! Metaprogramming allows users of the dynamic code
+to avoid writing a lot of boilerplate or complex code and instead have that
+code automagically generated. Earlier you've seen the attr_accessor method,
+which will generate setters and getters for supplied attributes. That's a very
+good example of metaprogramming, which makes code more readable, as long as you
+aren't concerned with implementation details and (un)fortunately, being a
+security reviewer, you are!
 
-Metaprogramming Basics
+Auditing source code that heavily uses metaprogramming (e.g. Rails) can be a
+tricky exercise and this section aims to equip you with the necessary knowledge
+to do so effectively.
+
+##### Metaprogramming Basics
+
 Let's look at the following code:
 
+```
 GREETINGS = {'english' => 'Hello!',
              'spanish' => '¡Hola!'}
 
@@ -1006,8 +1065,14 @@ end
 g = Greeting.new
 g.greet_in_english # outputs Hello!
 g.greet_in_spanish # outputs ¡Hola!
-The code above dynamically creates new methods on the Greeting class based on the values of the GREETING hash. Another way of writing this would be using class_eval (instead of the define_method), which evaluates a string or a block in class context (Greeting class in this case):
+```
 
+The code above dynamically creates new methods on the Greeting class based on
+the values of the GREETING hash. Another way of writing this would be using
+class_eval (instead of the define_method), which evaluates a string or a block
+in class context (Greeting class in this case):
+
+```
 class Greeting
   GREETINGS.each do |language, greeting|
     class_eval <<-EOT, __FILE__, __LINE__
@@ -1017,8 +1082,13 @@ class Greeting
     EOT
   end
 end
-Such dynamic method generation can also be implemented as a method, which eventually allows for "DSL"(Domain Specific Language) tricks, i.e. when the code looks like data and/or reads like text. The above could be rewritten as:
+```
 
+Such dynamic method generation can also be implemented as a method, which
+eventually allows for "DSL"(Domain Specific Language) tricks, i.e. when the
+code looks like data and/or reads like text. The above could be rewritten as:
+
+```
 module GreetingGenerator
   def greet(language, greeting)
     define_method("greet_in_#{language}") do
@@ -1033,8 +1103,13 @@ class Greeting
   greet "english", "Hello!"
   greet "spanish", "¡Hola!"
 end
-This kind of approach is used heavily in Rails, in particular in ActiveRecord models to implement a lot of magic tricks, which are one of the reasons for Rails' popularity:
+```
 
+This kind of approach is used heavily in Rails, in particular in ActiveRecord
+models to implement a lot of magic tricks, which are one of the reasons for
+Rails' popularity:
+
+```
 class Customer < ActiveRecord::Base
   has_many :orders, :dependent => :destroy
 end
@@ -1042,11 +1117,22 @@ end
 class Order < ActiveRecord::Base
   belongs_to :customer
 end
+```
+
 has_many and belongs_to will dynamically add methods to the corresponding classes behind the scenes.
 
-Singleton/Eigenclass/Metaclass/Object-specific Class
-A lot has been written on this subject so you are advised to read up on that, but the easiest (in the author's humble opinion) way to understand the concept of a metaclass (which also known as singleton or Eigenclass) is to remember that whenever you create an instance of a class that newly created object will contain its own methods table, while still maintaining a reference to the method table of the class it was created from. And the object's own methods table can be modified (e.g. methods added) without affecting the original class. To illustrate let's consider the following example:
+##### Singleton/Eigenclass/Metaclass/Object-specific Class
 
+A lot has been written on this subject so you are advised to read up on that,
+but the easiest (in the author's humble opinion) way to understand the concept
+of a metaclass (which also known as singleton or Eigenclass) is to remember
+that whenever you create an instance of a class that newly created object will
+contain its own methods table, while still maintaining a reference to the
+method table of the class it was created from. And the object's own methods
+table can be modified (e.g. methods added) without affecting the original
+class. To illustrate let's consider the following example:
+
+```
 >> my_str = "Got kumys?"
 >> def my_str.do_something
 >>   puts "doing stuff..."
@@ -1056,8 +1142,13 @@ doing stuff...
 >> another_str = "Got Ruby?"
 >> another_str.do_something
 NoMethodError: undefined method `do_something' for "Got Ruby?":String
-What happened? We've defined do_something method on my_str metaclass and since another_str is a new String class instance, these changes will not affect it, since it has its own metaclass. Another way of writing the above would be:
+```
 
+What happened? We've defined do_something method on my_str metaclass and since
+another_str is a new String class instance, these changes will not affect it,
+since it has its own metaclass. Another way of writing the above would be:
+
+```
 my_str = "Got kumys?"
 class << my_str
   def do_something
@@ -1072,10 +1163,16 @@ my_str.instance_eval do
     puts "doing stuff..."
   end
 end
-That's about all you need to know about metaclasses! But if you must go deeper, classes you define in Ruby are instances of the Class class and hence all methods that you define on a class are actually defined on a metaclass!
+```
 
-What if you wanted to define a method on the String class itself, instead of defining it on a metaclass?
+That's about all you need to know about metaclasses! But if you must go deeper,
+classes you define in Ruby are instances of the Class class and hence all
+methods that you define on a class are actually defined on a metaclass!
 
+What if you wanted to define a method on the String class itself, instead of
+defining it on a metaclass?
+
+```
 my_str = "Got kumys?"
 
 my_str.class.class_eval do
@@ -1086,18 +1183,28 @@ end
 
 another_str = "Got Ruby?"
 another_str.do_something  # prints "doing stuff..."
-In the code above class_eval evaluates supplied block in the context of the class (String) and adds the do_something instance method, which is available to all instances of String.
+```
 
-Metaprogramming can make source code auditing significantly harder; having a good understanding of some of the common techniques used in the Ruby community can potentially make the process less frustrating.
+In the code above class_eval evaluates supplied block in the context of the
+class (String) and adds the do_something instance method, which is available to
+all instances of String.
 
-Files
+Metaprogramming can make source code auditing significantly harder; having a
+good understanding of some of the common techniques used in the Ruby community
+can potentially make the process less frustrating.
 
-Just like with other languages, care should be taken when carrying out file operations with paths containing user-controlled data to avoid path traversal and arbitrary file reading/writing/execution vulnerabilities.
+#### Files
+
+Just like with other languages, care should be taken when carrying out file
+operations with paths containing user-controlled data to avoid path traversal
+and arbitrary file reading/writing/execution vulnerabilities.
 
 Ruby provides a variety of file APIs to resolve relative paths, etc.
 
-One interesting discrepancy in the way MRI 1.8 is behaving in comparison to MRI 1.9 and JRuby is NUL character handling:
+One interesting discrepancy in the way MRI 1.8 is behaving in comparison to MRI
+1.9 and JRuby is NUL character handling:
 
+```
 Ruby 1.8 (MRI):
 $ ruby -e 'p File.new("/etc/hosts\0").path'
 -e:1:in `initialize': string contains null byte (ArgumentError)
@@ -1107,13 +1214,25 @@ $ ruby -e 'p File.new("/etc/hosts\0").path'
 JRuby 1.6.7.2 (JRUBY-6247):
 $ ruby -e 'p File.new("/etc/hosts\0").path'
 "/etc/hosts\u0000"
-as you can see, NUL character injection works in Ruby 1.9 and JRuby so if an attacker controls only the middle part of the path (e.g. the file extension is appended to user input) it is be possible to use NUL to neutralize everything that follows it and carry out arbitrary file reading/writing attacks depending on vulnerable code. The following code displays the first line of /etc/passwd in 1.9 and JRuby:
+```
 
+as you can see, NUL character injection works in Ruby 1.9 and JRuby so if an
+attacker controls only the middle part of the path (e.g. the file extension is
+appended to user input) it is be possible to use NUL to neutralize everything
+that follows it and carry out arbitrary file reading/writing attacks depending
+on vulnerable code. The following code displays the first line of /etc/passwd
+in 1.9 and JRuby:
+
+```
 p File.new("/etc/passwd\0Got Kumys?").gets
-Regular Expressions
+```
 
-A very common mistake that has been documented before is the difference in what ^ and $ mean in Ruby compared to other languages. Consider the following code:
+#### Regular Expressions
 
+A very common mistake that has been documented before is the difference in what
+^ and $ mean in Ruby compared to other languages. Consider the following code:
+
+```
 input = get_http_paramter('locale')
 
 if (input =~ /^[\w]+$/) # only allow word characters
@@ -1123,19 +1242,34 @@ else
   # invalid input
   return INVALID
 end
-while it appears to be correct since regular expression is anchored, it turns out that in Ruby ^ represents line beginning and $ line end. So anyline in the input matching the regular expression results in it returning true.
+```
 
-To exploit the code above, the attacker would have to submit the following HTTP parameter:
+while it appears to be correct since regular expression is anchored, it turns
+out that in Ruby ^ represents line beginning and $ line end. So anyline in the
+input matching the regular expression results in it returning true.
 
+To exploit the code above, the attacker would have to submit the following HTTP
+parameter:
+
+```
 locale=/etc/passwd%00%0ainnocent
+```
+
 which when decoded by the web server will look like:
 
+```
 /etc/passwd\0
 innocent
-the second line (innocent) matches the regular expression and File happily stops processing value of input after hitting NUL(\0). This results in display_file_contents displaying /etc/passwd instead of innocent (note that we are relying on the NUL behaviour documented above).
+```
+
+the second line (innocent) matches the regular expression and File happily
+stops processing value of input after hitting NUL(\0). This results in
+display_file_contents displaying /etc/passwd instead of innocent (note that we
+are relying on the NUL behaviour documented above).
 
 To achieve the desired effect in the above code anchors need to be changed to \A and \z respectively:
 
+```
 input = get_http_paramter('locale')
 
 if (input =~ /\A[\w]+\z/) # only allow word characters
@@ -1145,63 +1279,147 @@ else
   # invalid input
   return INVALID
 end
-Good ol' shell injection
+```
+
+#### Good ol' shell injection
 
 Ruby provides a variety of methods for developers to execute shell commands:
 
-Backticks (e.g. `ping www.google.com`), just like a lot of other languages. If any part of the string is attacker-controlled, it results in shell injection.
-An interesting variant of the above, which achieves the same effect is %x. All of the examples below do the same thing:
+Backticks (e.g. `ping www.google.com`), just like a lot of other languages. If
+any part of the string is attacker-controlled, it results in shell injection.
+
+An interesting variant of the above, which achieves the same effect is %x. All
+of the examples below do the same thing:
+
+```
 %x( ping www.google.com )
 %x[ ping www.google.com ]
 %x{ ping www.google.com }
 %x< ping www.google.com >
 %x/ ping www.google.com /
 %x| ping www.google.com | 
-as you can tell, any delimiter character can be used after %x.
+```
+
+as you can tell, any delimiter character can be used after `%x`.
+
 IO.popen() whose first argument can either be a String or an Array of Strings:
-If the argument is a String then it contains the full command including arguments and any unescaped user controlled values in that string results in shell injection:
+
+If the argument is a String then it contains the full command including
+arguments and any unescaped user controlled values in that string results in
+shell injection:
+
+```
 IO.popen("ls -al /tmp; mkdir /tmp/PWNED") do |io|
   puts io.read
 end
-If the argument is an Array then the shell is bypassed and the array the the argv of the subprocess:
+```
+
+If the argument is an Array then the shell is bypassed and the array the the
+argv of the subprocess:
+
+```
 IO.popen(['ls', '-al', '/tmp && mkdir /tmp/PWNED']) do |io|
   puts io.read
 end
-Obviously, the Array variant should be the one used since it removes the need to perform shell escaping.
+```
+
+Obviously, the Array variant should be the one used since it removes the need
+to perform shell escaping.
+
 All methods defined in the Open3 module (e.g. popen3, pipeline, capture3, etc).
-Kernel.exec() replaces the current process by running the specified command. The method has somewhat complex rules:
-If one String is given, then the argument is shell expanded before execution. Controlling any part of that argument results in shell injection.
-If the first argument is a 2-element Array, then the 1st element is the program to execute and the 2nd element is the argv[0], which shows up in the process listing:
+
+Kernel.exec() replaces the current process by running the specified command.
+The method has somewhat complex rules:
+
+If one String is given, then the argument is shell expanded before
+execution. Controlling any part of that argument results in shell
+injection.
+
+If the first argument is a 2-element Array, then the 1st element is the
+program to execute and the 2nd element is the argv[0], which shows up in
+the process listing:
+
+```
 Kernel.exec(['sleep', 'kumys'], '10')
-will execute sleep and pass 10 as a command line argument with the process showing up as 'kumys' in the process listing. No shell processing is done on the arguments. Interestingly JRuby's behaviour is incorrect and isn't compliant with the documentation and the above code will result in:
+```
+
+will execute sleep and pass 10 as a command line argument with the process
+showing up as 'kumys' in the process listing. No shell processing is done on
+the arguments. Interestingly JRuby's behaviour is incorrect and isn't compliant
+with the documentation and the above code will result in:
+
+```
 Errno::ENOENT: No such file or directory - kumys
+```
+
 Swapping the elements around results in execution, however, unexpectedly arguments are passed through shell in JRuby:
+
+```
 Kernel.exec(['a', 'sleep;` mkdir /tmp/PWNED`'])
+```
+
 whereas in MRI the following error is returned (after swapping arguments):
+
+```
 Kernel.exec(['sleep;` mkdir /tmp/PWNED`', 'a'])
 Errno::ENOENT: No such file or directory - sleep;` mkdir /tmp/PWNED`
-If two or more String arguments are passed then the first is used as the command name and the rest are passed as parameters without shell processing.
-Kernel.system() behaves the same way as Kernel.exec(): if a single String is passed and part of it is user controlled it results in shell injection.
-Kernel.open(), surprisingly, supports command execution if the path starts with |, e.g.:
+```
+
+If two or more String arguments are passed then the first is used as the
+command name and the rest are passed as parameters without shell processing.
+
+Kernel.system() behaves the same way as Kernel.exec(): if a single String is
+passed and part of it is user controlled it results in shell injection.
+
+Kernel.open(), surprisingly, supports command execution if the path starts with
+|, e.g.:
+
+```
 open("|date") do |cmd|
   print cmd.gets
 end
-will execute date command and print its output. If any part of the open() argument is controlled by an attacker and is not escaped it results in shell injection, e.g.:
+```
+
+will execute date command and print its output. If any part of the open()
+argument is controlled by an attacker and is not escaped it results in shell
+injection, e.g.:
+
+```
 open ("|ls -al; mkdir /tmp/PWNED")
-Additionally if the open() call was intended to open a file and not execute commands and the start of the string is user-controlled, it should be possible to get it to execute commands by supplying | as the first character.
-Keep in mind that every object in Ruby includes the Kernel module, which means that in the code you will see calls to Kernel's methods without the module qualifier, e.g.:
+```
+
+Additionally if the open() call was intended to open a file and not execute
+commands and the start of the string is user-controlled, it should be possible
+to get it to execute commands by supplying | as the first character.
+Keep in mind that every object in Ruby includes the Kernel module, which means
+that in the code you will see calls to Kernel's methods without the module
+qualifier, e.g.:
+
+```
 open("|date")
 system("ls -al")
-As demonstrated above, if possible, it's strongly recommended to use an array or multiple strings to ensure no shell processing occurs. If, however, it's not possible then Shellwords.escape() should be used on user-controlled values.
+```
 
-Auditing all calls to invoke external commands should always be carried out during security reviews.
+As demonstrated above, if possible, it's strongly recommended to use an array
+or multiple strings to ensure no shell processing occurs. If, however, it's not
+possible then Shellwords.escape() should be used on user-controlled values.
 
-Serialization/Marshaling
+Auditing all calls to invoke external commands should always be carried out
+during security reviews.
 
-Ruby allows you to marshal objects to a byte stream and back using Marshal.dump() and Marshal.load() respectively. Only data (no code) is marshaled. Besides DoS bugs (e.g. array allocations based on user-supplied values), the author isn't aware of any serious vulnerabilities associated with unmarshaling untrusted data (what that really means is that this area needs more research), of course with the exception of application-specific vulnerabilities (e.g. trusting deserialized values in privileged operations).
+#### Serialization/Marshaling
+
+Ruby allows you to marshal objects to a byte stream and back using
+Marshal.dump() and Marshal.load() respectively. Only data (no code) is
+marshaled. Besides DoS bugs (e.g. array allocations based on user-supplied
+values), the author isn't aware of any serious vulnerabilities associated with
+unmarshaling untrusted data (what that really means is that this area needs
+more research), of course with the exception of application-specific
+vulnerabilities (e.g. trusting deserialized values in privileged operations).
 
 One area that needs further investigation is support for module extension:
 
+```
 module Innocent
   def action
     puts "In innocent..."
@@ -1215,18 +1433,26 @@ module Evil
 end
 
 Marshal.load("\004\be:\tEvilm\rInnocent")
+```
+
 The above call is an equivalent of:
 
+```
 Evil.extend_object(Innocent)
-and calling Innocent.action returns "In evil...". However, no exploitable condition was identified.
+```
 
-Overall, to be on the safe side, applications shouldn't deserialize untrusted data if possible. Security reviewers should check applications for applications-specific serialization bugs.
+and calling Innocent.action returns "In evil...". However, no exploitable
+condition was identified.
 
-References
+Overall, to be on the safe side, applications shouldn't deserialize untrusted
+data if possible. Security reviewers should check applications for
+applications-specific serialization bugs.
+
+### References
 
 See HTML links scattered in this document.
 
-Acknowledgements
+### Acknowledgements
 
 The following people have assisted in reviewing this guide and providing valuable feedback:
 
